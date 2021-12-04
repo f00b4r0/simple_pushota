@@ -57,11 +57,14 @@ static int ota_receive(int sock)
 	const esp_partition_t *upart = esp_ota_get_next_update_partition(NULL);
 	esp_ota_handle_t ota_handle;
 	char c, *s, *binstart;
-	const char *needle;
-	int binlen, len;
+	const char *needle, *status = "500 Internal Server Error";
+	int binlen, len, ret = -1;
 
-	if (!upart)
-		return -1;
+	if (!upart) {
+		status = "501 Not Implemented";
+		ESP_LOGE(TAG, "No OTA part available!");
+		goto outstatus;
+	}
 
 	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#x", upart->label, upart->subtype, upart->address);
 
@@ -82,8 +85,10 @@ static int ota_receive(int sock)
 		s += len;
 	} while ((s-buf < sizeof(buf)-1) && !binstart);
 
-	if (!binstart)
-		return -1;
+	if (!binstart) {
+		status = "431 Request Header Fields Too Large";
+		goto outstatus;
+	}
 
 	// leftover buffer, start of app image
 	len = s - binstart;
@@ -106,23 +111,29 @@ static int ota_receive(int sock)
 
 	// provide a way to abort
 	if (!strncmp(buf, "DELETE ", 7)) {
-		const char *status = "HTTP/1.0 204 No Content\r\n\r\n";
+		status = "204 No Content";
 		ESP_LOGI(TAG, "Aborting.");
-		send(sock, status, strlen(status), 0);
-		return 0;
+		ret = 0;
+		goto outstatus;
 	}
 
-	if (strncmp(buf, "POST ", 5))
-		return -1;
+	if (strncmp(buf, "POST ", 5)) {
+		status = "405 Method Not Allowed";
+		goto outstatus;
+	}
 
 	needle = "Content-Length:";
 	s = strstr(buf, needle) + strlen(needle);
-	if (!s)
-		return -1;
+	if (!s) {
+		status = "411 Length Required";
+		goto outstatus;
+	}
 
 	binlen = strtol(s, NULL, 10);
-	if (!binlen)
-		return -1;
+	if (!binlen) {
+		status = "411 Length Required";
+		goto outstatus;
+	}
 
 	ESP_LOGI(TAG, "Image size: %d bytes", binlen);
 
@@ -173,7 +184,13 @@ static int ota_receive(int sock)
 failota:
 	ESP_LOGE(TAG, "ota_receive() failed");
 	esp_ota_abort(ota_handle);
-	return -1;
+
+outstatus:
+	s = stpcpy(buf, "HTTP/1.0 ");
+	s = stpcpy(s, status);
+	s = stpcpy(s, "\r\n\r\n");
+	send(sock, buf, s-buf, 0);
+	return ret;
 }
 
 /**
