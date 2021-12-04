@@ -102,6 +102,9 @@ static int ota_receive(int sock)
 	 Content-Type: application/octet-stream
 	*/
 
+	if (strncmp(buf, "POST ", 5))
+		return -1;
+
 	needle = "Content-Length:";
 	s = strstr(buf, needle) + strlen(needle);
 	if (!s)
