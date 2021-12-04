@@ -80,7 +80,7 @@ static int ota_receive(int sock)
 
 		// locate end of header
 		needle = "\r\n\r\n";	// separator between headers and content
-		binstart = strstr(s, needle) + strlen(needle);	// stays within buf
+		binstart = strstr(s, needle);
 
 		s += len;
 	} while ((s-buf < sizeof(buf)-1) && !binstart);
@@ -89,6 +89,8 @@ static int ota_receive(int sock)
 		status = "431 Request Header Fields Too Large";
 		goto outstatus;
 	}
+
+	binstart += strlen(needle);	// stays within buf
 
 	// leftover buffer, start of app image
 	len = s - binstart;
@@ -123,12 +125,13 @@ static int ota_receive(int sock)
 	}
 
 	needle = "Content-Length:";
-	s = strstr(buf, needle) + strlen(needle);
+	s = strstr(buf, needle);
 	if (!s) {
 		status = "411 Length Required";
 		goto outstatus;
 	}
 
+	s += strlen(needle);
 	binlen = strtol(s, NULL, 10);
 	if (!binlen) {
 		status = "411 Length Required";
