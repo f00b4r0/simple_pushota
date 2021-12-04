@@ -17,6 +17,8 @@
 
  Second stage bootloader verifies app integrity, see:
  https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/startup.html#second-stage-bootloader
+
+ To abort the update before it begins, send a "DELETE" request using e.g. `curl <esphost>:OTA_PORT -X DELETE`
  */
 
 #include <stdlib.h>
@@ -101,6 +103,14 @@ static int ota_receive(int sock)
 	 Content-Length: 182
 	 Content-Type: application/octet-stream
 	*/
+
+	// provide a way to abort
+	if (!strncmp(buf, "DELETE ", 7)) {
+		const char *status = "HTTP/1.0 204 No Content\r\n\r\n";
+		ESP_LOGI(TAG, "Aborting.");
+		send(sock, status, strlen(status), 0);
+		return 0;
+	}
 
 	if (strncmp(buf, "POST ", 5))
 		return -1;
