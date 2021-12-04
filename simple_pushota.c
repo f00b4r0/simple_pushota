@@ -152,9 +152,9 @@ static int ota_receive(int sock)
 
 	binlen = esp_ota_set_boot_partition(upart);
 	if (binlen == ESP_OK)
-		len = sprintf(buf, "200 OK\r\n\r\nNext boot partition: %s\n", upart->label);
+		len = sprintf(buf, "HTTP/1.0 200 OK\r\n\r\nNext boot partition: %s\n", upart->label);
 	else
-		len = sprintf(buf, "500 Internal Server Error\r\n\r\nFailed (%d).\n", binlen);
+		len = sprintf(buf, "HTTP/1.0 500 Internal Server Error\r\n\r\nFailed (%d).\n", binlen);
 
 	send(sock, buf, len, 0);
 
