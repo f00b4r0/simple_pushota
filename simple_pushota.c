@@ -154,7 +154,7 @@ static int ota_receive(int sock)
 
 	// loop until we receive the full image
 	while (binlen) {
-		len = recv(sock, buf, sizeof(buf), 0);
+		len = recv(sock, buf, (sizeof(buf) < binlen) ? sizeof(buf) : binlen, 0);
 		if (len < 0)
 			goto failota;
 		if (!len)	// EOF
