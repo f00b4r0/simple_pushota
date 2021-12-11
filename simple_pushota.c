@@ -6,19 +6,22 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
-/*
- Note: this is a very crude implementation, not suitable for production environments.
- It (ab)uses a classic HTTP POST request sent by e.g. curl in the following fashion:
-
- curl <esphost>:OTA_PORT --data-binary @build/project.bin
-
- It will extract payload length from the request headers and write the binary payload to flash as is.
- It assumes that headers are separated from payload by "\r\n\r\n" (per RFC - curl satisfies this condition).
-
- Second stage bootloader verifies app integrity, see:
- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/startup.html#second-stage-bootloader
-
- To abort the update before it begins, send a "DELETE" request using e.g. `curl <esphost>:OTA_PORT -X DELETE`
+/**
+ * @file
+ * (Very) basic push OTA update system.
+ *
+ * This is a very crude implementation, not suitable for production environments.
+ * It (ab)uses a classic HTTP POST request sent by e.g. curl in the following fashion:
+ *
+ * `curl <esphost>:OTA_PORT --data-binary @build/project.bin`
+ *
+ * It will extract payload length from the request headers and write the binary payload to flash as is.
+ * It assumes that headers are separated from payload by "\r\n\r\n" (per RFC - curl satisfies this condition).
+ *
+ * The second stage bootloader verifies app integrity, see:
+ * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/startup.html#second-stage-bootloader
+ *
+ * To abort the update before it begins, send a "DELETE" request using e.g. `curl <esphost>:OTA_PORT -X DELETE`
  */
 
 #include <stdlib.h>
