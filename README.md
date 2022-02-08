@@ -38,12 +38,15 @@ See LICENSE.md for details
   * In LwIP, enable `SO_REUSEADDR` support (*)
   * In simple_pushota set the desired listen port
 
-Add the `simple_pushota.h` include and simply call `pushota()` in your project to launch the listener.
+Add the `simple_pushota.h` include and simply call `pushota(NULL)` in your project to launch the listener.
 
 The function will block and wait for an update.
 Thus it can either be called as needed (triggered from another part of the project when enabling OTA is wanted,
 suspending code execution), or it can run as a separate thread, always available (in which case special attention
 must be paid to concurrent threads execution during the OTA process).
+
+The function accepts an optional callback as argument, which can be used to e.g. stop other threads and/or
+reclaim memory before the update process begins (see example below).
 
 The component needs approximately 2320 bytes of stack for its operation (on ESP8266).
 
@@ -80,6 +83,9 @@ The code will check that a payload length is provided in the request headers,
 and that the upload content is actually at least the same length as what was specified in the POST request.
 Integrity checks are "delegated" to the underlying app_update subsystem,  
 
+If the `conn_cb` parameter is not `NULL` the pointed function will be executed immediately after a connection is established,
+before any processing is done on the content of the HTTP request.
+
 Upon success `pushota()` will return `ESP_OK`, at which point it is typically safe to call `esp_restart()` to boot into the new firmware.
 
 If the operation is aborted through an HTTP DELETE request, `pushota()` does not touch the flash and exits successfully with `ESP_OK`.
@@ -107,18 +113,26 @@ int app_main(void)
 	
 	if (wantota) {
 		ESP_LOGI(TAG, "Starting OTA");
-		ret = pushota();	// will block
+		ret = pushota(NULL);	// will block
 		if (!ret)
 			esp_restart();
 	}
 }
 ```
 
-### In separate thread
+### In separate task with a callback to kill another task
+
 ```c
+TaskHandle_t taskHandle;
+
+static void killtask(void)
+{
+	vTaskDelete(taskHandle);
+}
+
 static void pushota_task(void *pvParameter)
 {
-	pushota();
+	pushota(killtask);
 	esp_restart();	// always restart when pushota() returns
 }
 
@@ -126,6 +140,12 @@ int app_main(void)
 {
 	/* ... */
 	
+	ret = xTaskCreate(&mytask, "mytask", 4096, NULL, 5, &taskHandle);
+	if (ret != pdPASS) {
+		ESP_LOGE(TAG, "Failed to create my task");
+		abort();
+	}
+
 	ret = xTaskCreate(&pushota_task, "ota", 2560, NULL, 2, NULL);
 	if (ret != pdPASS)
 		ESP_LOGE(TAG, "Failed to create pushota task");

@@ -9,6 +9,6 @@
 #ifndef simple_pushota_h
 #define simple_pushota_h
 
-esp_err_t pushota(void);
+esp_err_t pushota(void (*conn_cb)(void));
 
 #endif /* simple_pushota_h */

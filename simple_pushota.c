@@ -204,9 +204,11 @@ outstatus:
 
 /**
  * Setup push OTA tcp socket and perform OTA update.
+ * @param conn_cb an optional callback to a function executed when a new connection is made,
+ * immediately prior to reading from it. Can be used to stop tasks and reclaim memory.
  * @return execution status
  */
-esp_err_t pushota(void)
+esp_err_t pushota(void (*conn_cb)(void))
 {
 	// we only care about ipv4
 	struct sockaddr_in dest_addr, source_addr;
@@ -258,6 +260,11 @@ esp_err_t pushota(void)
 
 	close(sock);	// only allow exactly one connection, others get ECONNREFUSED
 	sock = ret;
+
+	if (conn_cb) {
+		ESP_LOGD(TAG, "running conn_cb");
+		conn_cb();
+	}
 
 	// make sure unclean client shutdown won't DoS us
 	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &(int){ 1 }, sizeof(int))) {
