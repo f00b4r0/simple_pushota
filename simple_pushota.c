@@ -1,8 +1,8 @@
 //
-//  pushota.c
+//  simple_pushota.c
 //
 //
-//  (C) 2021 Thibaut VARENE
+//  (C) 2021-2022 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -37,7 +37,7 @@
 #include "lwip/sys.h"
 #include "lwip/netdb.h"
 
-#define OTA_PORT		8888
+#define OTA_PORT		CONFIG_SIMPLE_PUSHOTA_PORT
 #define OTA_BUFSIZE		1024
 
 #define KEEPALIVE_IDLE		5	// delay (s) before starting sending keepalives

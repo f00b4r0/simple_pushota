@@ -1,0 +1,9 @@
+menu "simple_pushota"
+
+config SIMPLE_PUSHOTA_PORT
+    int "Push OTA remote port"
+    default 8888
+
+endmenu
+
+
