@@ -61,11 +61,12 @@ static int ota_receive(int sock)
 	esp_ota_handle_t ota_handle;
 	char c, *s, *binstart;
 	const char *needle, *status = "500 Internal Server Error";
-	int binlen, len, ret = -1;
+	int binlen, len, ret = ESP_FAIL;
 
 	if (!upart) {
 		status = "501 Not Implemented";
 		ESP_LOGE(TAG, "No OTA part available!");
+		ret = ESP_ERR_NOT_SUPPORTED;
 		goto outstatus;
 	}
 
@@ -77,7 +78,7 @@ static int ota_receive(int sock)
 		// recv until we detect end of headers (or buffer full)
 		len = recv(sock, s, sizeof(buf)-1 - (s-buf), 0);	// last char must be '\0'
 		if (len <= 0)
-			return -1;
+			return ESP_FAIL;
 
 		s[len] = '\0';	// string ops need null-terminated haystack, make sure it is
 
@@ -118,7 +119,7 @@ static int ota_receive(int sock)
 	if (!strncmp(buf, "DELETE ", 7)) {
 		status = "204 No Content";
 		ESP_LOGI(TAG, "Aborting.");
-		ret = 0;
+		ret = ESP_OK;
 		goto outstatus;
 	}
 
@@ -172,20 +173,21 @@ static int ota_receive(int sock)
 	if (binlen)	// incomplete transfer
 		goto failota;
 
-	if (esp_ota_end(ota_handle) != ESP_OK)
-		return -1;
+	ret = esp_ota_end(ota_handle);
+	if (ret != ESP_OK)
+		return ret;
 
 	ESP_LOGI(TAG, "Flash complete");
 
-	binlen = esp_ota_set_boot_partition(upart);
-	if (binlen == ESP_OK)
+	ret = esp_ota_set_boot_partition(upart);
+	if (ret == ESP_OK)
 		len = sprintf(buf, "HTTP/1.0 200 OK\r\n\r\nNext boot partition: %s\n", upart->label);
 	else
-		len = sprintf(buf, "HTTP/1.0 500 Internal Server Error\r\n\r\nFailed (%d).\n", binlen);
+		len = sprintf(buf, "HTTP/1.0 500 Internal Server Error\r\n\r\nFailed (%d).\n", ret);
 
 	send(sock, buf, len, 0);
 
-	return binlen;
+	return ret;
 
 failota:
 	ESP_LOGE(TAG, "ota_receive() failed");
@@ -222,6 +224,7 @@ esp_err_t pushota(void)
 		return ESP_FAIL;
 	}
 
+	ret = ESP_FAIL;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int))) {
 		ESP_LOGE(TAG, "SO_REUSEADDR: %s", strerror(errno));
 		goto out;
@@ -243,6 +246,7 @@ esp_err_t pushota(void)
 	ret = accept(sock, (struct sockaddr *)&source_addr, &addr_len);
 	if (ret < 0) {
 		ESP_LOGE(TAG, "accept(): %d", errno);
+		ret = ESP_FAIL;
 		goto out;
 	}
 
@@ -252,6 +256,7 @@ esp_err_t pushota(void)
 	// make sure unclean client shutdown won't DoS us
 	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &(int){ 1 }, sizeof(int))) {
 		ESP_LOGE(TAG, "SO_KEEPALIVE: %d", errno);
+		ret = ESP_FAIL;
 		goto out;
 	}
 	// assume cannot fail if the above succeeds
@@ -261,13 +266,12 @@ esp_err_t pushota(void)
 
 	ret = ota_receive(sock);
 
-	shutdown(sock, SHUT_RD);
+out:
+	shutdown(sock, SHUT_RDWR);
 	close(sock);
 
 	if (ret == 0)
 		esp_restart();
 
-out:
-	close(sock);
-	return ESP_FAIL;
+	return ret;
 }
