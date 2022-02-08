@@ -203,7 +203,7 @@ outstatus:
 
 /**
  * Setup push OTA tcp socket and perform OTA update.
- * Does not return upon success (restarts)
+ * @return execution status
  */
 esp_err_t pushota(void)
 {
@@ -269,9 +269,6 @@ esp_err_t pushota(void)
 out:
 	shutdown(sock, SHUT_RDWR);
 	close(sock);
-
-	if (ret == 0)
-		esp_restart();
 
 	return ret;
 }
