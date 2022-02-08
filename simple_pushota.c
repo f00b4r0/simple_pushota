@@ -191,8 +191,9 @@ static int ota_receive(int sock)
 
 failota:
 	ESP_LOGE(TAG, "ota_receive() failed");
+#ifdef esp_ota_abort
 	esp_ota_abort(ota_handle);
-
+#endif
 outstatus:
 	s = stpcpy(buf, "HTTP/1.0 ");
 	s = stpcpy(s, status);
