@@ -210,6 +210,7 @@ outstatus:
  */
 esp_err_t pushota(void (*conn_cb)(void))
 {
+#ifdef CONFIG_SIMPLE_PUSHOTA_ENABLED
 	// we only care about ipv4
 	struct sockaddr_in dest_addr, source_addr;
 	socklen_t addr_len;
@@ -284,4 +285,7 @@ out:
 	close(sock);
 
 	return ret;
+#else	/* CONFIG_SIMPLE_PUSHOTA_ENABLED */
+	return ESP_ERR_NOT_SUPPORTED;
+#endif
 }

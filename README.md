@@ -36,7 +36,7 @@ See LICENSE.md for details
 * Set the partition table to allow OTA (using e.g. "Factory + 2 OTA partitions")
 * Under Components config:
   * In LwIP, enable `SO_REUSEADDR` support (*)
-  * In simple_pushota set the desired listen port
+  * In simple_pushota, enable and set the desired listen port
 
 Add the `simple_pushota.h` include and simply call `pushota(NULL)` in your project to launch the listener.
 
@@ -90,6 +90,12 @@ Upon success `pushota()` will return `ESP_OK`, at which point it is typically sa
 
 If the operation is aborted through an HTTP DELETE request, `pushota()` does not touch the flash and exits successfully with `ESP_OK`.
 
+When it is enabled in menuconfig, the component defines `CONFIG_SIMPLE_PUSHOTA_ENABLED` which can be used to
+selectively disable header inclusion and code compilation. Doing so allows entirely removing the component
+from your project without having to touch the project's code.
+
+When not enabled, `pushota()` will still be defined and will unconditionally return `ESP_ERR_NOT_SUPPORTED`.
+
 **(*) NOTE**:  `SO_REUSEADDR` is not *strictly* necessary and it is possible to use this code without it.
 It is used (and necessary) to allow immediate reuse of the listening port in the event the system is *not* restarted
 after `pushota()` has returned. Otherwise on the next run of `pushota()` the system will fail with the following error:
@@ -102,27 +108,35 @@ A warning is printed to console when `SO_REUSEADDR` is not enabled.
 
 ## Example code
 
-### Standalone
+### Standalone with selective compilation
 
 ```c
+#ifdef CONFIG_SIMPLE_PUSHOTA_ENABLED
+ #include "simple_pushota.h"
+#endif
+
 int app_main(void)
 {
 	bool wantota;
 	
 	/* ... */
 	
+#ifdef CONFIG_SIMPLE_PUSHOTA_ENABLED
 	if (wantota) {
 		ESP_LOGI(TAG, "Starting OTA");
 		ret = pushota(NULL);	// will block
 		if (!ret)
 			esp_restart();
 	}
+#endif
 }
 ```
 
 ### In separate task with a callback to kill another task
 
 ```c
+#include "simple_pushota.h"
+
 TaskHandle_t taskHandle;
 
 static void killtask(void)
