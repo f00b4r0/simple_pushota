@@ -226,10 +226,15 @@ esp_err_t pushota(void)
 	}
 
 	ret = ESP_FAIL;
+
+#ifdef CONFIG_LWIP_SO_REUSE
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int))) {
 		ESP_LOGE(TAG, "SO_REUSEADDR: %s", strerror(errno));
 		goto out;
 	}
+#else
+	ESP_LOGW(TAG, "Warning: SO_REUSEADDR is not available!");
+#endif
 
 	if (bind(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr))) {
 		ESP_LOGE(TAG, "bind(): %s", strerror(errno));

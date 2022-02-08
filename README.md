@@ -35,7 +35,7 @@ See LICENSE.md for details
 * run `idf.py menuconfig`
 * Set the partition table to allow OTA (using e.g. "Factory + 2 OTA partitions")
 * Under Components config:
-  * In LwIP, enable `SO_REUSEADDR` support
+  * In LwIP, enable `SO_REUSEADDR` support (*)
   * In simple_pushota set the desired listen port
 
 Add the `simple_pushota.h` include and simply call `pushota()` in your project to launch the listener.
@@ -83,6 +83,16 @@ Integrity checks are "delegated" to the underlying app_update subsystem,
 Upon success `pushota()` will return `ESP_OK`, at which point it is typically safe to call `esp_restart()` to boot into the new firmware.
 
 If the operation is aborted through an HTTP DELETE request, `pushota()` does not touch the flash and exits successfully with `ESP_OK`.
+
+**(*) NOTE**:  `SO_REUSEADDR` is not *strictly* necessary and it is possible to use this code without it.
+It is used (and necessary) to allow immediate reuse of the listening port in the event the system is *not* restarted
+after `pushota()` has returned. Otherwise on the next run of `pushota()` the system will fail with the following error:
+
+```
+pushota: bind(): Address already in use
+```
+
+A warning is printed to console when `SO_REUSEADDR` is not enabled.
 
 ## Example code
 
