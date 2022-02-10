@@ -201,7 +201,7 @@ static int ota_receive(int sock)
 
 failota:
 	ESP_LOGE(TAG, "ota_receive() failed");
-#ifdef esp_ota_abort
+#ifndef CONFIG_IDF_TARGET_ESP8266
 	esp_ota_abort(ota_handle);
 #endif
 outstatus:

@@ -50,7 +50,12 @@ reclaim memory before the update process begins (see example below).
 
 Errors are reported to the HTTP client via response headers, using standard HTTP response codes.
 
-The component needs approximately 2340 bytes of stack for its operation (on ESP8266 with stack smashing protection disabled).
+The component has the following approximate stack requirements:
+
+* 2340 bytes on ESP8266 with stack smashing protection disabled.
+* 2800 bytes on ESP32 with stack smashing protection disabled.
+
+Your mileage may vary.
 
 ### Flashing OTA
 
@@ -176,7 +181,7 @@ int app_main(void)
 		abort();
 	}
 
-	ret = xTaskCreate(&pushota_task, "ota", 2560, NULL, 2, NULL);
+	ret = xTaskCreate(&pushota_task, "ota", 2880, NULL, 2, NULL);
 	if (ret != pdPASS)
 		ESP_LOGE(TAG, "Failed to create pushota task");
 }
