@@ -64,15 +64,6 @@ static int ota_receive(int sock)
 	const char *needle, *status = "500 Internal Server Error";
 	int binlen, len, ret = ESP_FAIL;
 
-	if (!upart) {
-		status = "501 Not Implemented";
-		ESP_LOGE(TAG, "No OTA part available!");
-		ret = ESP_ERR_NOT_SUPPORTED;
-		goto outstatus;
-	}
-
-	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#x", upart->label, upart->subtype, upart->address);
-
 	// assume the HTTP headers fit the buffer
 	s = buf;
 	do {
@@ -137,6 +128,15 @@ static int ota_receive(int sock)
 		status = "405 Method Not Allowed";
 		goto outstatus;
 	}
+
+	if (!upart) {
+		status = "501 Not Implemented";
+		ESP_LOGE(TAG, "No OTA part available!");
+		ret = ESP_ERR_NOT_SUPPORTED;
+		goto outstatus;
+	}
+
+	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#x", upart->label, upart->subtype, upart->address);
 
 	needle = "Content-Length:";
 	s = strstr(buf, needle);
