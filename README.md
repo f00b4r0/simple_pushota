@@ -48,7 +48,9 @@ must be paid to concurrent threads execution during the OTA process).
 The function accepts an optional callback as argument, which can be used to e.g. stop other threads and/or
 reclaim memory before the update process begins (see example below).
 
-The component needs approximately 2320 bytes of stack for its operation (on ESP8266).
+Errors are reported to the HTTP client via response headers, using standard HTTP response codes.
+
+The component needs approximately 2340 bytes of stack for its operation (on ESP8266 with stack smashing protection disabled).
 
 ### Flashing OTA
 
@@ -72,6 +74,9 @@ otherwise an error will be reported to the client.
 It is possible to abort a call to `pushota()` without flashing by sending an HTTP DELETE request using e.g.
 `curl <esphost>:<OTA_PORT> -X DELETE`
 
+If enabled in menuconfig, it is possible to query the running firmware version by sending an HTTP GET request using e.g.
+`curl <esphost>:<OTA_PORT>`. The version will be provided in the response content.
+
 ## Implementation details
 
 The system is very crude, it provides just enough HTTP glue for a basic HTTP client to be able to upload the new firmware binary.
@@ -81,7 +86,8 @@ subsequent ones will be denied until the process completes.
 
 The code will check that a payload length is provided in the request headers,
 and that the upload content is actually at least the same length as what was specified in the POST request.
-Integrity checks are "delegated" to the underlying app_update subsystem,  
+Integrity checks are "delegated" to the underlying app_update subsystem, and the implementation gracefully handles the case where no
+OTA partitions are available.
 
 If the `conn_cb` parameter is not `NULL` the pointed function will be executed immediately after a connection is established,
 before any processing is done on the content of the HTTP request.
@@ -89,6 +95,14 @@ before any processing is done on the content of the HTTP request.
 Upon success `pushota()` will return `ESP_OK`, at which point it is typically safe to call `esp_restart()` to boot into the new firmware.
 
 If the operation is aborted through an HTTP DELETE request, `pushota()` does not touch the flash and exits successfully with `ESP_OK`.
+
+If `CONFIG_SIMPLE_PUSHOTA_GETVERSION` is enabled in menuconfig, it is possible to query the current firmware version through
+an HTTP GET request. The firmware version will be returned as a string in the response content and `pushota()` will return `ESP_FAIL`.
+
+The reason for returning `ESP_FAIL` is so that the caller can distinguish between e.g. an abort request, which from the point of view of the
+caller simulates a successful update without actually doing anything (hence returning "success"); and a version request which is not a 
+successful update (hence returning "faillure") and which may be followed by another call to `pushota()` without restarting to perform the
+actual update.
 
 When it is enabled in menuconfig, the component defines `CONFIG_SIMPLE_PUSHOTA_ENABLED` which can be used to
 selectively disable header inclusion and code compilation. Doing so allows entirely removing the component
@@ -124,8 +138,7 @@ int app_main(void)
 #ifdef CONFIG_SIMPLE_PUSHOTA_ENABLED
 	if (wantota) {
 		ESP_LOGI(TAG, "Starting OTA");
-		ret = pushota(NULL);	// will block
-		if (!ret)
+		if (pushota(NULL) == ESP_OK)	// will block
 			esp_restart();
 	}
 #endif
@@ -141,13 +154,16 @@ TaskHandle_t taskHandle;
 
 static void killtask(void)
 {
-	vTaskDelete(taskHandle);
+	if (taskHandle) {
+		vTaskDelete(taskHandle);
+		taskHandle = NULL;
+	}
 }
 
 static void pushota_task(void *pvParameter)
 {
-	pushota(killtask);
-	esp_restart();	// always restart when pushota() returns
+	while (pushota(killtask) != ESP_OK);	// will block
+	esp_restart();	// restart on success
 }
 
 int app_main(void)

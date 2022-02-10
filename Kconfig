@@ -3,6 +3,12 @@ menu "simple_pushota"
 config SIMPLE_PUSHOTA_ENABLED
     bool "Enable"
 
+config SIMPLE_PUSHOTA_GETVERSION
+    bool "Provide GET endpoint for version query"
+    help
+        Enabling this adds an interface to query the current firmware
+        version through an HTTP GET request.
+
 config SIMPLE_PUSHOTA_PORT
     int "Push OTA remote port"
     default 8888

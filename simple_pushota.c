@@ -22,6 +22,7 @@
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/startup.html#second-stage-bootloader
  *
  * To abort the update before it begins, send a "DELETE" request using e.g. `curl <esphost>:OTA_PORT -X DELETE`
+ * To query the current firmware version, if CONFIG_SIMPLE_PUSHOTA_GETVERSION is defined, send a "GET" request using e.g. `curl <esphost>:OTA_PORT`
  */
 
 #include <stdlib.h>
@@ -114,6 +115,15 @@ static int ota_receive(int sock)
 	 Content-Length: 182
 	 Content-Type: application/octet-stream
 	*/
+
+#ifdef CONFIG_SIMPLE_PUSHOTA_GETVERSION
+	if (!strncmp(buf, "GET ", 4)) {
+		const esp_app_desc_t *desc = esp_ota_get_app_description();
+		len = sprintf(buf, "HTTP/1.0 200 OK\r\n\r\nVersion: %s\n", desc->version);
+		send(sock, buf, len, 0);
+		return ESP_FAIL;
+	}
+#endif
 
 	// provide a way to abort
 	if (!strncmp(buf, "DELETE ", 7)) {
