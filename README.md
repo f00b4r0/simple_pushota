@@ -1,6 +1,6 @@
 #  ESP-IDF simple push OTA component
 
-A standalone component for ESP-IDF that adds basic push OTA capability to your project.
+Standalone component for ESP-IDF that adds basic push OTA capability to your project.
 
 This component is geared toward development stages, it is definitely **not production ready**,
 if only because the update is not even password-protected. It leverages the ESP "app_update" routines.
@@ -73,8 +73,10 @@ Where:
 * `<OTA_PORT>` is the configured OTA listen port
 * `<project>` is your project name
 
-A successful flash will be greeted with a 200 OK response and the next OTA boot partition will be sent in the reply content,
-otherwise an error will be reported to the client. 
+A successful flash will be greeted with a 200 OK response and the next OTA boot partition will be sent in the reply content
+while the function returns `ESP_OK`, otherwise the function returns an error value and an error will be reported to the client.
+
+Upon success it is safe to call `esp_restart()` to reboot into the newly uploaded firmware.
 
 It is possible to abort a call to `pushota()` without flashing by sending an HTTP DELETE request using e.g.
 `curl <esphost>:<OTA_PORT> -X DELETE`

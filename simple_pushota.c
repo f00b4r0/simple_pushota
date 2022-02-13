@@ -14,6 +14,7 @@
  * It (ab)uses a classic HTTP POST request sent by e.g. curl in the following fashion:
  *
  * `curl <esphost>:OTA_PORT --data-binary @build/project.bin`
+ * OTA_PORT is configurable through CONFIG_SIMPLE_PUSHOTA_PORT.
  *
  * It will extract payload length from the request headers and write the binary payload to flash as is.
  * It assumes that headers are separated from payload by "\r\n\r\n" (per RFC - curl satisfies this condition).
@@ -49,11 +50,14 @@ static const char * TAG = "pushota";
 
 /**
  * Perform OTA firmware update.
- * Parse basic HTTP POST request containing:
- * - Header "Content-Length": binary image size
- * - Payload: raw binary image
+ * Parse basic HTTP requests containing either:
+ * - POST request with:
+ *  - Header "Content-Length": binary image size
+ *  - Payload: raw binary image
+ * - DELETE request with no content to abort the OTA process
+ * - GET request (if enabled via CONFIG_SIMPLE_PUSHOTA_GETVERSION) to query the current firmware version
  * @param sock accept()'d input socket
- * @return execution status
+ * @return execution status: it is safe to call esp_restart() after this returns ESP_OK
  */
 static int ota_receive(int sock)
 {
