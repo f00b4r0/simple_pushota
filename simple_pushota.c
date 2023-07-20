@@ -114,7 +114,7 @@ static int ota_receive(int sock)
 
 #ifdef CONFIG_SIMPLE_PUSHOTA_GETVERSION
 	if (!strncmp(buf, "GET ", 4)) {
-		const esp_app_desc_t *desc = esp_ota_get_app_description();
+		const esp_app_desc_t *desc = esp_app_get_description();
 		len = sprintf(buf, "HTTP/1.0 200 OK\r\n\r\nVersion: %s\n", desc->version);
 		send(sock, buf, len, 0);
 		return ESP_FAIL;
@@ -141,7 +141,7 @@ static int ota_receive(int sock)
 		goto outstatus;
 	}
 
-	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#x", upart->label, upart->subtype, upart->address);
+	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#" PRIx32, upart->label, upart->subtype, upart->address);
 
 	needle = "Content-Length:";
 	s = strstr(buf, needle);
