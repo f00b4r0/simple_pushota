@@ -46,6 +46,7 @@
 #define KEEPALIVE_INTERVAL	5	// keepalive probes period (s)
 #define KEEPALIVE_COUNT		3	// max unanswered before timeout
 
+#ifdef CONFIG_SIMPLE_PUSHOTA_ENABLED
 static const char * TAG = "pushota";
 
 /**
@@ -215,6 +216,7 @@ outstatus:
 	send(sock, buf, s-buf, 0);
 	return ret;
 }
+#endif /* CONFIG_SIMPLE_PUSHOTA_ENABLED */
 
 /**
  * Setup push OTA tcp socket and perform OTA update.
