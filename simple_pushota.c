@@ -293,6 +293,7 @@ esp_err_t pushota(void (*conn_cb)(void))
 	setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &(int){ KEEPALIVE_IDLE }, sizeof(int));
 	setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &(int){ KEEPALIVE_INTERVAL }, sizeof(int));
 	setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &(int){ KEEPALIVE_COUNT }, sizeof(int));
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &(int){ 1 }, sizeof(int));
 
 	ret = ota_receive(sock);
 
