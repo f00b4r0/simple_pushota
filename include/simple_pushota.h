@@ -9,6 +9,14 @@
 #ifndef simple_pushota_h
 #define simple_pushota_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 esp_err_t pushota(void (*conn_cb)(void));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* simple_pushota_h */
