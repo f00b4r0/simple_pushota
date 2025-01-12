@@ -141,7 +141,7 @@ static int ota_receive(int sock)
 		goto outstatus;
 	}
 
-	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#x", upart->label, upart->subtype, upart->address);
+	ESP_LOGI(TAG, "target OTA part %s subtype %#x addr %#x", upart->label, upart->subtype, (unsigned int)(upart->address));
 
 	needle = "Content-Length:";
 	s = strstr(buf, needle);
