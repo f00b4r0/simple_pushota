@@ -10,7 +10,9 @@ with no warranty of any kind :)
 
 It enables quick and easy remote flashing of a device under development.
 
-This component supports (and has been successfully tested with) both **ESP8266** and **ESP32**.
+This component supports (and has been successfully tested with) both **ESP8266** and **ESP32**
+(for the `idf-4.4-8266` branch). This repository features several branches which adjust to the
+requirements of various versions of ESP IDF.
 
 ## License
 
